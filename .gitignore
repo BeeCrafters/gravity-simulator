@@ -1,0 +1,6 @@
+.cache
+build
+vendor/glad
+deprecated
+vendor/glfw/lib
+vendor/glfw/include
