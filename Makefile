@@ -31,7 +31,7 @@ CFLAGS = -std=c23 -O2 $(INCLUDES)
 all: $(TARGET)
 
 debug: $(OBJECTS)
-	$(CC) $(CFLAGS) $(LDFLAGS) -g -c $^ -o $(TARGET)-debug
+	$(CC) $(CFLAGS) $(LDFLAGS) -D__DEBUG__ -g $^ -o $(TARGET)-debug
 
 $(TARGET): $(OBJECTS)
 	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
@@ -41,16 +41,21 @@ $(BUILD_DIR)/%.o: $(SOURCE_DIR)/%.c vendor/glad
 	$(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 vendor/glad:
-	mkdir vendor/glad
 	pip install glad
+	mkdir vendor/glad
 	glad --profile core --api gl=3.3 --generator c --out-path vendor/glad
 
 clean:
 	rm -rf $(BUILD_DIR) $(TARGET) $(TARGET)-debug
 
+# Users with system-wide glfw installations should run this.
+system-glfw:
+	mkdir -p vendor/glfw
+	echo system > vendor/glfw/install-type
+
 # This is mainly for Windows/Mac users who don't have glfw packaged in their OSs.
-# Such users should run this target before anything else.
 local-glfw:
+	mkdir -p vendor/glfw
 	echo local > vendor/glfw/install-type
 	echo "You're on your own about installing glfw in vendor/glfw ."
 	echo "The Makefile expects dynamic libraries be at vendor/glfw/lib ."

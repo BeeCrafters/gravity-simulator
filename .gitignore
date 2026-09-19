@@ -2,5 +2,6 @@
 build
 vendor/glad
 deprecated
-vendor/glfw/lib
-vendor/glfw/include
+vendor/glfw
+compile_flags.txt
+g-sim
