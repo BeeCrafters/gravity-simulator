@@ -5,7 +5,7 @@ This project is still in development. We have yet to make plans or a mission dec
 > Doesn't make sense not to live for fun;
 > Your brain gets **smart**, but your head gets **dumb**.
 
--- *Smash Mouth*, ***All Star***, from album ***Astro Lounge*** (1999)
+*Smash Mouth*, ***All Star***, from album ***Astro Lounge*** (1999)
 
 ## Compilation
 
