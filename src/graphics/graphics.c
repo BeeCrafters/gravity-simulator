@@ -11,6 +11,8 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <graphics/matrix.h>
+#include <cgltf.h>
 
 #ifndef __GRAPHICS_C__
 #define __GRAPHICS_C__
@@ -34,7 +36,7 @@ typedef struct {
  * This struct is internal, only a handle will be given to the user.
  *
  * Maybe we'll just shill the pointer to this structure as the handle
- * to save processing time, since the handle is a uint64_t.
+ * to save time with checking each model, since the handle is a uint64_t.
  */
 typedef struct {
 	gfx_struct_type type;
@@ -60,19 +62,31 @@ typedef struct {
  * attached to a single body, but maybe they would.
  */
 typedef struct {
+	gfx_struct_type type;
 	uint64_t tags;
+	uint64_t handle;
+
+	gfx_model* models;
+	gfx_camera* cameras;
+
+	list_node list;
 } gfx_object;
 
 typedef struct {
 	GLFWwindow* window;
+
 	char* vertex_shader_path;
 	char* geometry_shader_path;
 	char* fragment_shader_path;
+
 	ivec2_t window_dimensions;
+
 	void (*key_callback)(int key, int scancode, int action, int mods);
 	void (*cursor_callback)(double x, double y);
 	void (*button_callback)(int key, int action, int mods);
 	void (*scroll_callback)(double xoffset, double yoffset);
+
+	gfx_camera* cameras;
 } gfx_state;
 
 
@@ -81,10 +95,19 @@ typedef struct {
 
 static gfx_state graphics_state = {
 	.window = NULL,
+
 	.vertex_shader_path = NULL,
 	.geometry_shader_path = NULL,
 	.fragment_shader_path = NULL,
+
 	.window_dimensions = ivec2(800, 600),
+
+	.key_callback = NULL,
+	.cursor_callback = NULL,
+	.button_callback = NULL,
+	.scroll_callback = NULL,
+
+	.cameras = NULL,
 };
 
 
@@ -162,6 +185,12 @@ static int gfx_rebuild_program() {
 
 
 // Global Functions (also included in the .h file)
+
+/*
+ * Sets the camera for the render perspective
+ */
+void gfx_set_view_camera(uint64_t cam_id) {
+}
 
 // Set callback functions
 void gfx_set_key_callback(void (*callback)(int key, int scancode, int action, int mods)) {
