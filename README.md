@@ -5,12 +5,13 @@ This project is still in development. We have yet to make plans or a mission dec
 > Doesn't make sense not to live for fun;
 > Your brain gets **smart**, but your head gets **dumb**.
 
--- *Smash Mouth*, ***All Star***, from album ***Astro Lounge*** (1999)
+*Smash Mouth*, ***All Star***, from album ***Astro Lounge*** (1999)
 
 ## Compilation
 
-For your first time compiling, be sure to have an internet connection. The Makefile includes the line
-`	curl https://raw.githubusercontent.com/jkuhlmann/cgltf/refs/heads/master/cgltf.h > $@`
+For your first time running `make`, be sure to have an internet connection. The Makefile includes the line:
+
+`	curl https://raw.githubusercontent.com/jkuhlmann/cgltf/refs/heads/master/cgltf.h`
 
 ### - Dependencies
 
@@ -29,9 +30,11 @@ If you have selected system-wide, pkg-config will be run to find the correct C f
 ### - Actually Running `make`
 
 - `make`
+
 This will build the application.
 
 - `make debug`
+
 This will build the application with debug features. This target adds the `-g` flag to `gcc` and also defines the `__DEBUG__` macro.
 
 ---
