@@ -11,13 +11,15 @@ TARGET = g-sim
 
 INCLUDES += -Iinclude -Ivendor/glad/include -Ivendor/cgltf/include
 
-# This part detects the glfw installation type
-GLFW_INSTALL_TYPE = $(shell cat vendor/glfw/install-type 2>/dev/null)
-ifeq ($(GLFW_INSTALL_TYPE),local)
+# This part detects if the pkg-config binary and the glfw3 package exist or not
+GLFW_SYSTEM_EXISTS = $(shell pkg-config --exists glfw3 2>/dev/null && echo yes || echo no)
+ifeq ($(GLFW_SYSTEM_EXISTS),no)
 
-LDFLAGS += -Lvendor/glfw/lib -glfw3 -lm
+$(shell echo -$$'\n\nYou are missing pkg-config and/or a glfw package. Here are some useful instructions:\n\nFor posix compliant OS users:\n\tInstall the glfw development package from your package manager.\n\tIf there is no fitting package, use a local installation.\n\nFor MSYS2 users:\n\tRun "sudo pacman -S mingw-w64-{env type}-glfw".\n\tReplace {env type} with "ucrt-x86_64", "x86_64" or "clang-x86_64".\n\nOtherwise, simply install glfw locally into vendor/glfw:\n\tThe Makefile expects dynamic libraries be at vendor/glfw/lib, and the include folder should be at vendor/glfw/include.\n\n\nThe build will continue with the assumption of a local installation.\n')
+
+LDFLAGS += -Lvendor/glfw/lib -lglfw -lGL -ldl -lm
 INCLUDES += -Ivendor/glfw/include
-TARGET := $(TARGET).exe
+# TARGET := $(TARGET).exe
 
 else
 
@@ -37,17 +39,10 @@ debug: $(OBJECTS)
 $(TARGET): $(OBJECTS)
 	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
 
-$(BUILD_DIR)/%.o: $(SOURCE_DIR)/%.c vendor/glfw/install-type vendor/cgltf/include/cgltf.h
+$(BUILD_DIR)/%.o: $(SOURCE_DIR)/%.c vendor/cgltf/include/cgltf.h
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
-
-# GLFW installation type selection. This is necessary so we can have support for users / team members with local installations.
-vendor/glfw/install-type:
-	@printf "\nYou have not selected your GLFW installation type yet.\nThis selection is so that users who want to use local GLFW installations can specify so.\nFor a better explanation, refer to the README.\n\tSelect your installation type. [ (system/local) or (s/l) ]: "
-	@read installtype; mkdir -p vendor/glfw; if [ "$$(echo $$installtype)" == "system" ] || [ "$$(echo $$installtype)" == "s" ]; then echo system > vendor/glfw/install-type; elif [ "$$(echo $$installtype)" == "local" ] || [ "$$(echo $$installtype)" == "l" ]; then echo local > vendor/glfw/install-type; printf "\nLittle disclaimer about local installations!\n\tYou're on your own about installing glfw in vendor/glfw.\n\tThe Makefile expects dynamic libraries be at vendor/glfw/lib, and the include folder should be at vendor/glfw/include.\n"; fi
-	@printf "GLFW install type selected.\n\n"
-	cat vendor/glfw/install-type
 
 vendor/cgltf/include/cgltf.h:
 	@mkdir -p vendor/cgltf/include
