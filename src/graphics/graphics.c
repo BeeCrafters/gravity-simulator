@@ -1,21 +1,24 @@
 /*
- * Main graphics/engine/window code.
+ * Main graphics/window code.
  */
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <cgltf.h>
 
 #include <math/vec.h>
+#include <math/matrix.h>
+#include <math/quaternion.h>
 #include <debug.h>
 #include <list.h>
 
 #include <stdlib.h>
 #include <string.h>
-#include <graphics/matrix.h>
-#include <cgltf.h>
 
 #ifndef __GRAPHICS_C__
 #define __GRAPHICS_C__
+
+#define SHADER_COMPILATION_LOG_BUFFER_SIZE 4096
 
 // Structs/Enums
 
@@ -66,6 +69,8 @@ typedef struct {
 	uint64_t tags;
 	uint64_t handle;
 
+	fvec3 direction;
+
 	gfx_model* models;
 	gfx_camera* cameras;
 
@@ -76,10 +81,10 @@ typedef struct {
 	GLFWwindow* window;
 
 	char* vertex_shader_path;
-	char* geometry_shader_path;
 	char* fragment_shader_path;
 
-	ivec2_t window_dimensions;
+	int window_width;
+	int window_height;
 
 	void (*key_callback)(int key, int scancode, int action, int mods);
 	void (*cursor_callback)(double x, double y);
@@ -97,10 +102,10 @@ static gfx_state graphics_state = {
 	.window = NULL,
 
 	.vertex_shader_path = NULL,
-	.geometry_shader_path = NULL,
 	.fragment_shader_path = NULL,
 
-	.window_dimensions = ivec2(800, 600),
+	.window_width = 800,
+	.window_height = 600,
 
 	.key_callback = NULL,
 	.cursor_callback = NULL,
@@ -115,8 +120,8 @@ static gfx_state graphics_state = {
 // Static Fuctions
 
 static void gfx_on_framebuffer_resize(GLFWwindow* window, int w, int h) {
-	graphics_state.window_dimensions.w = w;
-	graphics_state.window_dimensions.h = h;
+	graphics_state.window_width = w;
+	graphics_state.window_height = h;
 	glViewport(0, 0, w, h);
 }
 
@@ -161,7 +166,7 @@ static char* gfx_load_shader(const char* path) {
 	size_t read_size = fread(source, 1, filesize, file);
 
 	if (filesize != read_size) {
-		debug_print("In gfx_load_shader, filesize does not equal read_size\n");
+		debug_test(filesize - read_size);
 		free(source);
 		return NULL;
 	}
@@ -178,8 +183,29 @@ static int gfx_rebuild_program() {
 	if (graphics_state.vertex_shader_path == NULL || graphics_state.fragment_shader_path == NULL)
 		return 1;
 
-//	unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
-//	glShaderSource(vertexShader, 1, )
+	char* vertexSource = gfx_load_shader(graphics_state.vertex_shader_path);
+	if (vertexSource == NULL) {
+		debug_test(vertexSource);
+		return -1;
+	}
+
+	char* fragmentSource = gfx_load_shader(graphics_state.fragment_shader_path);
+	if (fragmentSource == NULL) {
+		debug_test(fragmentSource);
+		free(vertexSource);
+		return -1;
+	}
+
+	char* log_buffer = malloc(SHADER_COMPILATION_LOG_BUFFER_SIZE);
+
+	unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
+	glShaderSource(vertexShader, 1, (const char* const *)(&vertexSource), NULL);
+	glCompileShader(vertexShader);
+	glGetShaderInfoLog(vertexShader, SHADER_COMPILATION_LOG_BUFFER_SIZE, NULL, log_buffer);
+
+	unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+	glShaderSource(fragmentShader, 1, (const char* const *)(&fragmentSource), NULL);
+
 }
 
 
@@ -215,7 +241,7 @@ void gfx_set_scroll_callback(void (*callback)(double xoffset, double yoffset)) {
 /*
  * This function is to be called once per program execution.
  */
-int gfx_init(const char* wname, ivec2_t size) {
+int gfx_init(const char* wname, int width, int height) {
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -225,7 +251,7 @@ int gfx_init(const char* wname, ivec2_t size) {
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
-	GLFWwindow* window = glfwCreateWindow(size.width, size.height, wname, NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(width, height, wname, NULL, NULL);
 	debug_return(window, -1);
 
 	glfwMakeContextCurrent(window);
@@ -247,7 +273,7 @@ int gfx_init(const char* wname, ivec2_t size) {
 int gfx_set_shader_path(GLenum type, const char* path) {
 	FILE* file = fopen(path, "r");
 	fclose(file);
-	debug_return(file, 1);
+	debug_return(file, -1);
 
 	char* variable_path = strdup(path);
 
@@ -257,7 +283,7 @@ int gfx_set_shader_path(GLenum type, const char* path) {
 			break;
 
 		case GL_GEOMETRY_SHADER:
-			graphics_state.geometry_shader_path = variable_path;
+			return -1;
 			break;
 
 		case GL_FRAGMENT_SHADER:
